@@ -2,20 +2,33 @@ const db = require("../utils/db");
 
 // Create a new order
 exports.createOrder = (req, res) => {
-  const { productId, quantity } = req.body;
+  const { productId, quantity, name, phone, address } = req.body;
   const userId = req.user.id;
-  const sql = `INSERT INTO orders (user_id, product_id, quantity, created_at) VALUES (?, ?, ?, NOW())`;
+  const sql = `INSERT INTO orders (user_id, name, phone, address, product_id, quantity, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())`;
 
-  db.query(sql, [userId, productId, quantity], (err) => {
-    if (err)
-      return res.status(500).json({ message: "Failed to create order." });
-    res.status(201).json({ message: "Order created successfully." });
-  });
+  db.query(
+    sql,
+    [userId, name, phone, address, productId, quantity],
+    (err, result) => {
+      if (err) {
+        console.error("Error creating order:", err);
+        return res.status(500).json({ message: "Failed to create order." });
+      }
+
+      // The ID of the newly created order
+      const orderId = result.insertId;
+
+      res.status(201).json({
+        message: "Order created successfully.",
+        orderId: orderId, // Include the order ID in the response
+      });
+    }
+  );
 };
 
 // Update an order within 10 minutes
 exports.updateOrder = (req, res) => {
-  const { quantity } = req.body;
+  const { quantity, name, phone, address } = req.body;
   const orderId = req.params.id;
   const userId = req.user.id;
 
@@ -38,12 +51,16 @@ exports.updateOrder = (req, res) => {
         .json({ message: "Order can only be updated within 10 minutes." });
     }
 
-    const updateOrderQuery = `UPDATE orders SET quantity = ? WHERE id = ?`;
-    db.query(updateOrderQuery, [quantity, orderId], (err) => {
-      if (err)
-        return res.status(500).json({ message: "Failed to update order." });
-      res.status(200).json({ message: "Order updated successfully." });
-    });
+    const updateOrderQuery = `UPDATE orders SET quantity = ?, name = ?, phone = ?, address = ? WHERE id = ?`;
+    db.query(
+      updateOrderQuery,
+      [quantity, name, phone, address, orderId],
+      (err) => {
+        if (err)
+          return res.status(500).json({ message: "Failed to update order." });
+        res.status(200).json({ message: "Order updated successfully." });
+      }
+    );
   });
 };
 
@@ -66,5 +83,22 @@ exports.deleteOrder = (req, res) => {
     if (err)
       return res.status(500).json({ message: "Failed to delete order." });
     res.status(200).json({ message: "Order deleted successfully." });
+  });
+};
+
+const fs = require("fs");
+const path = require("path");
+
+exports.getPaymentSlips = (req, res) => {
+  const directoryPath = path.join(__dirname, "../uploads/payment_slips");
+  console.log("Directory Path:", directoryPath);
+
+  fs.readdir(directoryPath, (err, files) => {
+    if (err) {
+      console.error("Error reading directory:", err);
+      return res.status(500).json({ message: "Unable to scan directory." });
+    }
+    console.log("Files:", files); // Log the files found
+    res.status(200).json(files);
   });
 };

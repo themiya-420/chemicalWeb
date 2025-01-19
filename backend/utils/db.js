@@ -51,8 +51,12 @@ db.connect((err) => {
       CREATE TABLE IF NOT EXISTS orders (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
+        name VARCHAR(255),
+        phone VARCHAR(255),
+        address VARCHAR(255),
         product_id INT NOT NULL,
         quantity INT NOT NULL,
+        payment_slip VARCHAR(255) DEFAULT NULL,
         created_at DATETIME NOT NULL,
         FOREIGN KEY (user_id) REFERENCES users(id),
         FOREIGN KEY (product_id) REFERENCES products(id)
